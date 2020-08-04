@@ -67,10 +67,6 @@ FOUNDATION_EXPORT OSStatus fbsdkdfl_AudioServicesCreateSystemSoundID(CFURLRef in
 FOUNDATION_EXPORT OSStatus fbsdkdfl_AudioServicesDisposeSystemSoundID(SystemSoundID inSystemSoundID);
 FOUNDATION_EXPORT void fbsdkdfl_AudioServicesPlaySystemSound(SystemSoundID inSystemSoundID);
 
-#pragma mark - AdSupport Classes
-
-FOUNDATION_EXPORT Class fbsdkdfl_ASIdentifierManagerClass(void);
-
 #pragma mark - SafariServices Classes
 
 FOUNDATION_EXPORT Class fbsdkdfl_SFSafariViewControllerClass(void);
