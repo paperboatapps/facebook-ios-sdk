@@ -16,21 +16,38 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#import <XCTest/XCTest.h>
-
 #import <OCMock/OCMock.h>
+#import <XCTest/XCTest.h>
 
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 
 #import "FBSDKViewHierarchy.h"
 
-@interface FBSDKViewHierarchyTests : XCTestCase {
+@interface FBSDKViewHierarchyTests : XCTestCase
+{
   UIScrollView *scrollview;
   UILabel *label;
   UITextField *textField;
   UITextView *textView;
   UIButton *btn;
 }
+@end
+
+id getVariableFromInstance(NSObject *instance, NSString *variableName);
+
+@interface TestObj : NSObject @end
+@implementation TestObj
+{
+  NSString *_a;
+}
+- (instancetype)init
+{
+  if (self = [super init]) {
+    _a = @"BLAH";
+  }
+  return self;
+}
+
 @end
 
 @implementation FBSDKViewHierarchyTests
@@ -40,20 +57,20 @@
   scrollview = [[UIScrollView alloc] init];
 
   label = [[UILabel alloc] init];
-  label.text = @"I am a label";
+  label.text = NSLocalizedString(@"I am a label", nil);
   [scrollview addSubview:label];
 
   textField = [[UITextField alloc] init];
-  textField.text = @"I am a text field";
-  textField.placeholder = @"text field placeholder";
+  textField.text = NSLocalizedString(@"I am a text field", nil);
+  textField.placeholder = NSLocalizedString(@"text field placeholder", nil);
   [scrollview addSubview:textField];
 
   textView = [[UITextView alloc] init];
-  textView.text = @"I am a text view";
+  textView.text = NSLocalizedString(@"I am a text view", nil);
   [scrollview addSubview:textView];
 
   btn = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 5, 20)];
-  [btn setTitle:@"I am a button" forState:UIControlStateNormal];
+  [btn setTitle:NSLocalizedString(@"I am a button", nil) forState:UIControlStateNormal];
   [scrollview addSubview:btn];
 }
 
@@ -99,6 +116,19 @@
   UIViewController *VC = [[UIViewController alloc] init];
   [NC addChildViewController:VC];
   XCTAssertEqualObjects([FBSDKViewHierarchy getHint:NC], @"UIViewController");
+}
+
+- (void)testGetInstanceVariable
+{
+  // empty args should cause no-op.
+  XCTAssertEqualObjects(getVariableFromInstance(nil, @"anything prop"), NSNull.null);
+  XCTAssertEqualObjects(getVariableFromInstance([NSObject new], nil), NSNull.null);
+
+  // If there is no ivar, should return nil.
+  XCTAssertEqualObjects(getVariableFromInstance([NSObject new], @"some_made_up_property_123456"), NSNull.null);
+
+  // this should work.
+  XCTAssertEqualObjects(getVariableFromInstance([TestObj new], @"_a"), @"BLAH");
 }
 
 @end

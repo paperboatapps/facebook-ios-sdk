@@ -18,10 +18,11 @@
 
 #import <XCTest/XCTest.h>
 
+#import "FBSDKInternalUtility.h"
 #import "FBSDKRestrictiveData.h"
-#import "FBSDKTypeUtility.h"
+#import "FBSDKTestCase.h"
 
-@interface FBSDKRestrictiveDataTests : XCTestCase
+@interface FBSDKRestrictiveDataTests : FBSDKTestCase
 
 @end
 

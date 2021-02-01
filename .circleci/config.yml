@@ -50,7 +50,7 @@ commands:
     steps:
       - attach_workspace:
           at: .
-      - run: carthage build --no-skip-current
+      - run: CARTHAGE_BIN_PATH=$( which carthage ) sh scripts/carthage.sh build --no-skip-current
 
   build_for_release:
     description: Builds libraries for release
@@ -82,7 +82,7 @@ commands:
       - attach_workspace:
           at: .
       - run: |
-          xcodebuild build \
+          xcodebuild clean build \
             -workspace FacebookSDK.xcworkspace \
             -scheme << parameters.scheme >> \
             -configuration << parameters.configuration >>

@@ -16,11 +16,11 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#import <OCMock/OCMock.h>
 #import <XCTest/XCTest.h>
 
-#import <OCMock/OCMock.h>
-
 #import "FBSDKCoreKit+Internal.h"
+#import "FBSDKTestCase.h"
 
 @interface FBSDKMonitor (Testing)
 
@@ -31,7 +31,7 @@
 
 @end
 
-@interface FBSDKPerformanceMonitorTests : XCTestCase
+@interface FBSDKPerformanceMonitorTests : FBSDKTestCase
 @end
 
 @implementation FBSDKPerformanceMonitorTests
@@ -41,14 +41,17 @@
   [super setUp];
 
   [FBSDKMonitor enable];
+
+  // This should be removed when these tests are updated to check the actual requests that are created
+  [self stubAllocatingGraphRequestConnection];
 }
 
 - (void)tearDown
 {
-  [super tearDown];
-
   [FBSDKMonitor flush];
   [FBSDKMonitor disable];
+
+  [super tearDown];
 }
 
 - (void)testRecordingPerformance
@@ -64,12 +67,22 @@
 
   FBSDKPerformanceMonitorEntry *entry = (FBSDKPerformanceMonitorEntry *) FBSDKMonitor.entries.firstObject;
 
-  XCTAssertEqualObjects(entry.dictionaryRepresentation[@"event_name"], @"Foo",
-                        @"Entry should contain the event name");
-  XCTAssertEqualObjects(entry.dictionaryRepresentation[@"time_start"], expectedStartTime,
-                        @"Entry should contain the start time of the metric");
-  XCTAssertEqualWithAccuracy([entry.dictionaryRepresentation[@"time_spent"] doubleValue], [@1 doubleValue], 0.1,
-                        @"Entry should contain the difference between the start and end-time of the metric");
+  XCTAssertEqualObjects(
+    entry.dictionaryRepresentation[@"event_name"],
+    @"Foo",
+    @"Entry should contain the event name"
+  );
+  XCTAssertEqualObjects(
+    entry.dictionaryRepresentation[@"time_start"],
+    expectedStartTime,
+    @"Entry should contain the start time of the metric"
+  );
+  XCTAssertEqualWithAccuracy(
+    [entry.dictionaryRepresentation[@"time_spent"] doubleValue],
+    [@1 doubleValue],
+    0.1,
+    @"Entry should contain the difference between the start and end-time of the metric"
+  );
 }
 
 - (void)testRecordingPerformanceWithInvalidInterval
@@ -79,8 +92,11 @@
 
   [FBSDKPerformanceMonitor record:@"Foo" startTime:date];
 
-  XCTAssertEqual(FBSDKMonitor.entries.count, 0,
-                 @"Should not add invalid entries to the monitor");
+  XCTAssertEqual(
+    FBSDKMonitor.entries.count,
+    0,
+    @"Should not add invalid entries to the monitor"
+  );
 }
 
 @end

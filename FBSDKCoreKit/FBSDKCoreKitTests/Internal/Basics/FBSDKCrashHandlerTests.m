@@ -16,42 +16,39 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#import <OCMock/OCMock.h>
 #import <XCTest/XCTest.h>
 
-#import <OCMock/OCMock.h>
-
-#import "FBSDKCrashHandler.h"
+#import "FBSDKCrashObserver.h"
+#import "FBSDKInternalUtility.h"
 #import "FBSDKSettings.h"
+#import "FBSDKTestCase.h"
 
 @interface FBSDKCrashHandler ()
 
-+ (void)uninstallExceptionsHandler;
-+ (NSArray<NSString *> *)getCrashLogFileNames:(NSArray<NSString *> *)files;
-+ (NSString *)getPathToCrashFile:(NSString *)timestamp;
-+ (NSString *)getPathToLibDataFile:(NSString *)identifier;
-+ (BOOL)callstack:(NSArray<NSString *> *)callstack
-   containsPrefix:(NSArray<NSString *> *)prefixList;
-+ (NSArray<NSDictionary<NSString *, id> *> *)filterCrashLogs:(NSArray<NSString *> *)prefixList
-                                          processedCrashLogs:(NSArray<NSDictionary<NSString *, id> *> *)processedCrashLogs;
++ (void)_uninstallExceptionsHandler;
++ (NSArray<NSString *> *)_getCrashLogFileNames:(NSArray<NSString *> *)files;
++ (NSString *)_getPathToCrashFile:(NSString *)timestamp;
++ (NSString *)_getPathToLibDataFile:(NSString *)identifier;
++ (BOOL)_callstack:(NSArray<NSString *> *)callstack
+    containsPrefix:(NSArray<NSString *> *)prefixList;
++ (NSArray<NSDictionary<NSString *, id> *> *)_filterCrashLogs:(NSArray<NSString *> *)prefixList
+                                           processedCrashLogs:(NSArray<NSDictionary<NSString *, id> *> *)processedCrashLogs;
++ (void)_saveCrashLog:(NSDictionary<NSString *, id> *)crashLog;
 
 @end
 
-@interface FBSDKCrashHandlerTests : XCTestCase
+@interface FBSDKCrashHandlerTests : FBSDKTestCase
 @end
 
 @implementation FBSDKCrashHandlerTests
 
 - (void)setUp
 {
-  [FBSDKCrashHandler initialize];
-}
+  [super setUp];
 
-- (void)testDisable
-{
-  id hanlderMock = [OCMockObject niceMockForClass:[FBSDKCrashHandler class]];
-  [[hanlderMock expect] uninstallExceptionsHandler];
-  [FBSDKCrashHandler disable];
-  [hanlderMock verify];
+  // This should be removed when these tests are updated to check the actual requests that are created
+  [self stubAllocatingGraphRequestConnection];
 }
 
 - (void)testGetFBSDKVersion
@@ -70,7 +67,7 @@
                                  @"SUGGEST_EVENT_3.rules",
                                  @"crash.text",
   ];
-  NSArray<NSString *> *result1 = [FBSDKCrashHandler getCrashLogFileNames:files];
+  NSArray<NSString *> *result1 = [FBSDKCrashHandler _getCrashLogFileNames:files];
   XCTAssertTrue([result1 containsObject:@"crash_log_1576471375.json"]);
 
   XCTAssertFalse([result1 containsObject:@"crash_lib_data_05DEDC8AFC724E09A5E68190C492B92B.json"]);
@@ -80,15 +77,15 @@
   XCTAssertFalse([result1 containsObject:@"crash.text"]);
 
   files = [NSArray array];
-  NSArray<NSString *> *result2 = [FBSDKCrashHandler getCrashLogFileNames:files];
+  NSArray<NSString *> *result2 = [FBSDKCrashHandler _getCrashLogFileNames:files];
   XCTAssertTrue(result2.count == 0);
 }
 
 - (void)testGetPathToCrashFile
 {
   NSString *timestampMock = @"test_timestamp";
-  NSString *crashLogFileName =  [NSString stringWithFormat:@"crash_log_%@.json", timestampMock];
-  NSString *pathToCrashFile = [FBSDKCrashHandler getPathToCrashFile:timestampMock];
+  NSString *crashLogFileName = [NSString stringWithFormat:@"crash_log_%@.json", timestampMock];
+  NSString *pathToCrashFile = [FBSDKCrashHandler _getPathToCrashFile:timestampMock];
 
   XCTAssertTrue([pathToCrashFile hasSuffix:crashLogFileName]);
 }
@@ -97,7 +94,7 @@
 {
   NSString *identifierMock = @"test_identifier";
   NSString *libDataFileName = [NSString stringWithFormat:@"crash_lib_data_%@.json", identifierMock];
-  NSString *pathToLibDataFile = [FBSDKCrashHandler getPathToLibDataFile:identifierMock];
+  NSString *pathToLibDataFile = [FBSDKCrashHandler _getPathToLibDataFile:identifierMock];
 
   XCTAssertTrue([pathToLibDataFile hasSuffix:libDataFileName]);
 }
@@ -111,19 +108,19 @@
     @"-[FBSDKWebViewAppLinkResolver appLinkFromALData:destination:]+10540",
     @"(14 DEV METHODS)",
   ];
-  XCTAssertTrue([FBSDKCrashHandler callstack:callStack1 containsPrefix:prefixList]);
+  XCTAssertTrue([FBSDKCrashHandler _callstack:callStack1 containsPrefix:prefixList]);
 
   NSArray<NSString *> *callStack2 = @[
     @"(2 DEV METHODS)",
     @"-[FBAdPersistentCacheImpl storeAssetInMemory:forKey:expiration:]+14455428",
     @"(12 DEV METHODS)",
   ];
-  XCTAssertFalse([FBSDKCrashHandler callstack:callStack2 containsPrefix:prefixList]);
+  XCTAssertFalse([FBSDKCrashHandler _callstack:callStack2 containsPrefix:prefixList]);
 }
 
 - (void)testFilterCrashLogs
 {
-  NSArray *filteredCrashLogs = [FBSDKCrashHandler filterCrashLogs:@[@"FBSDK", @"_FBSDK"] processedCrashLogs:[self mockProcessedCrashLogs]];
+  NSArray *filteredCrashLogs = [FBSDKCrashHandler _filterCrashLogs:@[@"FBSDK", @"_FBSDK"] processedCrashLogs:[self mockProcessedCrashLogs]];
 
   XCTAssertEqual(1, filteredCrashLogs.count);
 
@@ -143,13 +140,13 @@
 - (NSArray<NSDictionary<NSString *, id> *> *)mockProcessedCrashLogs
 {
   NSDictionary<NSString *, id> *crashLog1 = @{
-    @"app_version" :  @"4.16(4)",
-    @"callstack" :  @[
-       @"(2 DEV METHODS)",
-       @"-[FBSDKWebViewAppLinkResolver appLinkFromALData:destination:]+2110632",
-       @"-[FBSDKWebViewAppLinkResolver appLinkFromALData:destination:]+10540",
-       @"(14 DEV METHODS)",
-     ],
+    @"app_version" : @"4.16(4)",
+    @"callstack" : @[
+      @"(2 DEV METHODS)",
+      @"-[FBSDKWebViewAppLinkResolver appLinkFromALData:destination:]+2110632",
+      @"-[FBSDKWebViewAppLinkResolver appLinkFromALData:destination:]+10540",
+      @"(14 DEV METHODS)",
+    ],
     @"reason" : @"InvalidOperationException",
     @"timestamp" : @"1585764970",
     @"device_model" : @"iPhone7,2",
@@ -157,12 +154,12 @@
   };
 
   NSDictionary<NSString *, id> *crashLog2 = @{
-    @"app_version" :  @"1.173.0(2)",
-    @"callstack" :  @[
-       @"(3 DEV METHODS)",
-       @"-[SettingsItemViewController imageWithImage:destination:]+2110632",
-       @"(6 DEV METHODS)",
-     ],
+    @"app_version" : @"1.173.0(2)",
+    @"callstack" : @[
+      @"(3 DEV METHODS)",
+      @"-[SettingsItemViewController imageWithImage:destination:]+2110632",
+      @"(6 DEV METHODS)",
+    ],
     @"reason" : @"NSInvalidArgumentException",
     @"timestamp" : @"1585764970",
     @"device_model" : @"iPad4,1",

@@ -9,7 +9,94 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Important
 
-[Full Changelog](https://github.com/facebook/facebook-ios-sdk/compare/v7.1.1...HEAD)
+[Full Changelog](https://github.com/facebook/facebook-ios-sdk/compare/v9.0.0...HEAD)
+
+## 9.0.0
+
+We have a number of exciting changes in this release!
+For more information on the v9 release please read our associated blog [post](https://developers.facebook.com/blog/post/2021/01/19/introducing-platform-sdk-v9)!
+
+### Added
+
+- Swift Package Manager now supports Mac Catalyst
+- Limited Login. Please read the blog [post](https://developers.facebook.com/blog/post/2021/01/19/facebook-login-updates-new-limited-data-mode) and [docs](https://developers.facebook.com/docs/facebook-login/ios/limited-login/) for a general overview and implementation details.
+
+### Changed
+
+- The default Graph API version is updated to v9.0
+- The `linkURL` property of `FBSDKProfile` will only be populated if the user has granted the `user_link` permission.
+- FBSDKGamingServicesKit will no longer embed FBSDKCoreKit as a dependency. This may affect you if you are manually integrating pre-built binaries.
+
+### Removed
+
+- The `autoInitEnabled` option is removed from the SDK. From here on, developers are required to initialize the SDK explicitly with the `initializeSDK` method or implicitly by calling it in `applicationDidFinishLaunching`.
+
+### Fixed
+
+- Swift Package Manager Mac Catalyst support [#1577](https://github.com/facebook/facebook-ios-sdk/issues/1577)
+
+[2021-01-05](https://github.com/facebook/facebook-ios-sdk/releases/tag/v9.0.0) |
+[Full Changelog](https://github.com/facebook/facebook-ios-sdk/compare/v8.2.0...v9.0.0)
+
+## 8.2.0
+
+### Changed
+- Remove SignalHandler to avoid hiding root cause of crashes caused by fatal signals.
+- Expose functions in `FBSDKUserDataStore` as public for apps using [Audience Network SDK](https://developers.facebook.com/docs/audience-network) only to use advanced matching.
+
+[2020-11-10](https://github.com/facebook/facebook-ios-sdk/releases/tag/v8.2.0) |
+[Full Changelog](https://github.com/facebook/facebook-ios-sdk/compare/v8.1.0...v8.2.0)
+
+## 8.1.0
+
+### Added
+- Introduced `AppLinkResolverRequestBuilder` for use in cleaning up and adding tests around `AppLinkResolver`
+
+### Changed
+- Removed version checks for iOS 9 since it’s the default version now.
+- Refactored `AppLinkResolver` to use a request builder
+- Refactored and added tests around `FBSDKProfile` and `FBSDKProfilePictureView`
+- Updated `FBSDKSettings` to use `ADIdentifierManager` for tracking status
+- Removes usages of deprecated `UI_USER_INTERFACE_IDIOM()`
+
+### Fixed
+- Issues with Swift names causing warnings - #1522
+- Fixes bugs related to crash handling - #1444
+- Fixes Carthage distribution to include the correct binary slices when building on Xcode12 - #1484
+- Fixes duplicate symbol for `FBSDKVideoUploader` bug #1512
+- GET requests now default to having a 'fields' parameter to avoid warnings about missing fields #1403
+- Fixes Multithreading issue related to crash reporting - #1550
+
+[2020-10-23](https://github.com/facebook/facebook-ios-sdk/releases/tag/v8.1.0) |
+[Full Changelog](https://github.com/facebook/facebook-ios-sdk/compare/v8.0.0...v8.1.0)
+
+## 8.0.0
+
+## Added
+- Added timestamp for install event in iOS 14
+- Added method `setAdvertiserTrackingEnabled` to overwrite the `advertiser_tracking_enabled` flag
+- Added `SKAdNetwork` support for installs
+- Added `SKAdNetwork` support for conversion value in iOS 14
+- Added `FBSDKReferralManager` for integrating with the web referral dialog
+- Added method `loginWithURL` to `FBSDKLoginManager` for supporting deep link authentication
+- Added E2E tests for all in-market versions of the SDK that run on server changes to avoid regressions
+
+## Changed
+- Event handling in iOS 14: will drop events if `setAdvertiserTrackingEnabled` is called with `false` in iOS 14
+- `FBSDKProfile - imageURLForPictureMode:size:` - User profile images will only be available when an access or client token is available
+
+## Deprecated
+- `FBSDKSettings - isAutoInitEnabled` - Auto-initialization flag. Will be removed in the next major release. Future versions of the SDK will not utilize the `+ load` method to automatically initialize the SDK.
+
+## Fixed / Patched
+- #1444 - Update crash handling to use sigaction in signal handler and respect SIG_IGN
+- #1447 - Login form automatically closing when SDK is not initialized on startup
+- #1478 - Minimum iOS deployment target is now 9.0
+- #1485 - StoreKit is now added as a weak framework for CocoaPods
+- Bug fix for Advanced Matching, which was not working on iOS 14
+
+[2020-09-22](https://github.com/facebook/facebook-ios-sdk/releases/tag/v8.0.0) |
+[Full Changelog](https://github.com/facebook/facebook-ios-sdk/compare/v7.1.1...v8.0.0)
 
 ## 7.1.1
 

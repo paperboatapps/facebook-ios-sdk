@@ -16,11 +16,11 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#import <OCMock/OCMock.h>
 #import <XCTest/XCTest.h>
 
-#import <OCMock/OCMock.h>
-
 #import "FBSDKCoreKit+Internal.h"
+#import "FBSDKTestCase.h"
 
 @interface FBSDKMonitor (Testing)
 
@@ -31,7 +31,7 @@
 
 @end
 
-@interface FBSDKMethodUsageMonitorTests : XCTestCase
+@interface FBSDKMethodUsageMonitorTests : FBSDKTestCase
 @end
 
 @implementation FBSDKMethodUsageMonitorTests
@@ -40,15 +40,18 @@
 {
   [super setUp];
 
+  // This should be removed when these tests are updated to check the actual requests that are created
+  [self stubAllocatingGraphRequestConnection];
+
   [FBSDKMonitor enable];
 }
 
 - (void)tearDown
 {
-  [super tearDown];
-
   [FBSDKMonitor flush];
   [FBSDKMonitor disable];
+
+  [super tearDown];
 }
 
 - (void)testRecordingMethodUsage
@@ -59,8 +62,11 @@
 
   FBSDKMethodUsageMonitorEntry *entry = (FBSDKMethodUsageMonitorEntry *) FBSDKMonitor.entries.firstObject;
 
-  XCTAssertEqualObjects(entry.dictionaryRepresentation[@"event_name"], expectedName,
-                        @"Entry should contain the captured method name");
+  XCTAssertEqualObjects(
+    entry.dictionaryRepresentation[@"event_name"],
+    expectedName,
+    @"Entry should contain the captured method name"
+  );
 }
 
 @end

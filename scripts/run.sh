@@ -74,7 +74,7 @@ main() {
     SDK_VERSION_FILES=(
       "Configurations/Version.xcconfig"
       "FBSDKCoreKit/FBSDKCoreKit/FBSDKCoreKit.h"
-      "FBSDKCoreKit/FBSDKCoreKit/Basics/Instrument/FBSDKCrashHandler.m"
+      "Sources/FBSDKCoreKit_Basics/FBSDKCrashHandler.m"
     )
 
     SDK_GRAPH_API_VERSION_FILES=(
@@ -287,10 +287,10 @@ build_sdk() {
   }
 
   build_carthage() {
-    carthage build --no-skip-current
+    CARTHAGE_BIN_PATH=$( which carthage ) sh scripts/carthage.sh build --no-skip-current
 
     if [ "${1:-}" == "--archive" ]; then
-      carthage archive --output Carthage/Release/
+      CARTHAGE_BIN_PATH=$( which carthage ) sh scripts/carthage.sh archive --output Carthage/Release/
     fi
   }
 
@@ -434,15 +434,15 @@ release_sdk() {
 
     # Release frameworks in dynamic (mostly for Carthage)
     release_dynamic() {
-      carthage build --no-skip-current
-      carthage archive --output build/Release/
+      CARTHAGE_BIN_PATH=$( which carthage ) sh scripts/carthage.sh build --no-skip-current
+      CARTHAGE_BIN_PATH=$( which carthage ) sh scripts/carthage.sh archive --output build/Release/
       mv build/Release/FBSDKCoreKit.framework.zip build/Release/FacebookSDK_Dynamic.framework.zip
     }
 
     # Release frameworks in static
     release_static() {
       release_basics() {
-        xcodebuild build \
+        xcodebuild clean build \
          -workspace FacebookSDK.xcworkspace \
          -scheme BuildCoreKitBasics \
          -configuration Release | xcpretty
@@ -461,12 +461,12 @@ release_sdk() {
         cd ..
       }
 
-      xcodebuild build \
+      xcodebuild clean build \
        -workspace FacebookSDK.xcworkspace \
        -scheme BuildAllKits \
        -configuration Release | xcpretty
 
-      xcodebuild build \
+      xcodebuild clean build \
        -workspace FacebookSDK.xcworkspace \
        -scheme BuildAllKits_TV \
        -configuration Release | xcpretty
@@ -522,6 +522,8 @@ release_sdk() {
 
   release_docs() {
     for kit in "${SDK_KITS[@]}"; do
+      rm -rf "$kit/build" || true
+
       ruby "$SDK_SCRIPTS_DIR"/genDocs.rb "$kit"
 
       # Zip the result so it can be uploaded easily
