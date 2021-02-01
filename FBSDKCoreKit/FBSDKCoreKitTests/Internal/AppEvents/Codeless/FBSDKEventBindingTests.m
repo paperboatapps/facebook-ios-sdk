@@ -19,12 +19,12 @@
 #import <XCTest/XCTest.h>
 
 #import "FBSDKCodelessParameterComponent.h"
+#import "FBSDKCoreKitTests-Swift.h"
 #import "FBSDKEventBinding.h"
 #import "FBSDKEventBindingManager.h"
-#import "FBSDKSampleEventBinding.h"
-#import "FBSDKCoreKitTests-Swift.h"
 
-@interface FBSDKEventBindingTests : XCTestCase {
+@interface FBSDKEventBindingTests : XCTestCase
+{
   UIWindow *window;
   FBSDKEventBindingManager *eventBindingManager;
   UIButton *btnBuy;
@@ -34,7 +34,7 @@
 
 @end
 
-@interface FBSDKEventBinding(Testing)
+@interface FBSDKEventBinding (Testing)
 
 + (NSString *)findParameterOfPath:(NSArray *)path
                          pathType:(NSString *)pathType
@@ -44,52 +44,53 @@
 
 @implementation FBSDKEventBindingTests
 
-- (void)setUp {
+- (void)setUp
+{
   [super setUp];
 
-  if (@available(iOS 9.0, *)) {
-    eventBindingManager = [[FBSDKEventBindingManager alloc]
-                           initWithJSON:[FBSDKSampleEventBinding getSampleDictionary]];
-    window = [[UIWindow alloc] init];
-    UIViewController *vc = [[UIViewController alloc] init];
-    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+  eventBindingManager = [[FBSDKEventBindingManager alloc]
+                         initWithJSON:[FBSDKSampleEventBinding getSampleDictionary]];
+  window = [[UIWindow alloc] init];
+  UIViewController *vc = [[UIViewController alloc] init];
+  UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
 
-    UITabBarController *tab = [[UITabBarController alloc] init];
-    tab.viewControllers = @[nav];
-    window.rootViewController = tab;
+  UITabBarController *tab = [[UITabBarController alloc] init];
+  tab.viewControllers = @[nav];
+  window.rootViewController = tab;
 
-    UIStackView *firstStackView = [[UIStackView alloc] init];
-    [vc.view addSubview:firstStackView];
-    UIStackView *secondStackView = [[UIStackView alloc] init];
-    [firstStackView addSubview:secondStackView];
+  UIStackView *firstStackView = [[UIStackView alloc] init];
+  [vc.view addSubview:firstStackView];
+  UIStackView *secondStackView = [[UIStackView alloc] init];
+  [firstStackView addSubview:secondStackView];
 
-    btnBuy = [UIButton buttonWithType:UIButtonTypeCustom];
-    [btnBuy setTitle:@"Buy" forState:UIControlStateNormal];
-    [firstStackView addSubview:btnBuy];
+  btnBuy = [UIButton buttonWithType:UIButtonTypeCustom];
+  [btnBuy setTitle:NSLocalizedString(@"Buy", nil) forState:UIControlStateNormal];
+  [firstStackView addSubview:btnBuy];
 
-    UILabel *lblPrice = [[UILabel alloc] init];
-    lblPrice.text = @"$2.0";
-    [firstStackView addSubview:lblPrice];
+  UILabel *lblPrice = [[UILabel alloc] init];
+  lblPrice.text = NSLocalizedString(@"$2.0", nil);
+  [firstStackView addSubview:lblPrice];
 
-    btnConfirm = [UIButton buttonWithType:UIButtonTypeCustom];
-    [btnConfirm setTitle:@"Confirm" forState:UIControlStateNormal];
-    [firstStackView addSubview:btnConfirm];
+  btnConfirm = [UIButton buttonWithType:UIButtonTypeCustom];
+  [btnConfirm setTitle:NSLocalizedString(@"Confirm", nil) forState:UIControlStateNormal];
+  [firstStackView addSubview:btnConfirm];
 
-    lblPrice = [[UILabel alloc] init];
-    lblPrice.text = @"$3.0";
-    [secondStackView addSubview:lblPrice];
+  lblPrice = [[UILabel alloc] init];
+  lblPrice.text = NSLocalizedString(@"$3.0", nil);
+  [secondStackView addSubview:lblPrice];
 
-    stepper = [[UIStepper alloc] init];
-    [secondStackView addSubview:stepper];
-  }
+  stepper = [[UIStepper alloc] init];
+  [secondStackView addSubview:stepper];
 }
 
-- (void)tearDown {
-    // Put teardown code here. This method is called after the invocation of each test method in the class.
-    [super tearDown];
+- (void)tearDown
+{
+  // Put teardown code here. This method is called after the invocation of each test method in the class.
+  [super tearDown];
 }
 
-- (void)testMatching {
+- (void)testMatching
+{
   NSArray *bindings = [FBSDKEventBindingManager parseArray:[FBSDKSampleEventBinding getSampleDictionary][@"event_bindings"]];
   FBSDKEventBinding *binding = bindings[0];
   XCTAssertTrue([FBSDKEventBinding isViewMatchPath:stepper path:binding.path]);
@@ -97,7 +98,7 @@
   binding = bindings[1];
   FBSDKCodelessParameterComponent *component = binding.parameters[0];
   XCTAssertTrue([FBSDKEventBinding isViewMatchPath:btnBuy path:binding.path]);
-  NSString *price = [FBSDKEventBinding findParameterOfPath:component.path  pathType:component.pathType sourceView:btnBuy];
+  NSString *price = [FBSDKEventBinding findParameterOfPath:component.path pathType:component.pathType sourceView:btnBuy];
   XCTAssertEqual(price, @"$2.0");
 
   binding = bindings[2];
@@ -110,7 +111,8 @@
   XCTAssertEqual(action, @"Confirm");
 }
 
-- (void)testEventBindingEquation {
+- (void)testEventBindingEquation
+{
   NSArray *bindings = [FBSDKEventBindingManager parseArray:[FBSDKSampleEventBinding getSampleDictionary][@"event_bindings"]];
   XCTAssertTrue([bindings[0] isEqualToBinding:bindings[0]]);
   XCTAssertFalse([bindings[0] isEqualToBinding:bindings[1]]);
@@ -118,9 +120,9 @@
 
 - (void)testParsing
 {
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 100; i++) {
     NSDictionary *sampleData = [FBSDKSampleEventBinding getSampleDictionary];
-    [FBSDKEventBindingManager parseArray: @[[Fuzzer randomizeWithJson:sampleData]]];
+    [FBSDKEventBindingManager parseArray:@[[Fuzzer randomizeWithJson:sampleData]]];
   }
 }
 

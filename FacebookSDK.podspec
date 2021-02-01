@@ -3,7 +3,7 @@
 Pod::Spec.new do |s|
 
   s.name         = 'FacebookSDK'
-  s.version      = '7.1.1'
+  s.version      = '9.0.0'
   s.summary      = 'Official Facebook SDK for iOS to access Facebook Platform'
 
   s.description  = <<-DESC
@@ -18,11 +18,10 @@ Pod::Spec.new do |s|
   s.author       = 'Facebook'
 
   s.platform     = :ios, :tvos
-  s.ios.deployment_target = '8.0'
+  s.ios.deployment_target = '9.0'
   s.tvos.deployment_target = '10.0'
 
-  s.source       = { :git => 'https://github.com/facebook/facebook-ios-sdk.git',
-                     :tag => "v#{s.version}" }
+  s.source       = { :http => "https://github.com/facebook/facebook-ios-sdk/releases/download/v#{s.version}/FacebookSDK.xcframework.zip" }
 
   s.ios.weak_frameworks = 'Accounts', 'Social', 'Security', 'QuartzCore', 'CoreGraphics', 'UIKit', 'Foundation', 'AudioToolbox', 'WebKit'
   s.tvos.weak_frameworks = 'Security', 'QuartzCore', 'CoreGraphics', 'UIKit', 'Foundation', 'AudioToolbox'
@@ -30,22 +29,23 @@ Pod::Spec.new do |s|
   s.requires_arc = true
 
   s.default_subspecs = 'CoreKit'
+  s.swift_version = '5.0'
 
   s.subspec 'CoreKit' do |ss|
     ss.dependency 'FBSDKCoreKit', "~> #{s.version}"
   end
   s.subspec 'LoginKit' do |ss|
     ss.dependency 'FacebookSDK/CoreKit'
-    ss.dependency 'FBSDKLoginKit', "~> #{s.version}"
+    ss.vendored_framework = 'FBSDKLoginKit.xcframework'
   end
   s.subspec 'ShareKit' do |ss|
     ss.dependency 'FacebookSDK/CoreKit'
-    ss.dependency 'FBSDKShareKit', "~> #{s.version}"
+    ss.vendored_framework = 'FBSDKShareKit.xcframework'
   end
   s.subspec 'TVOSKit' do |ss|
     ss.platform = :tvos
     ss.dependency 'FacebookSDK/ShareKit'
     ss.dependency 'FacebookSDK/LoginKit'
-    ss.dependency 'FBSDKTVOSKit', "~> #{s.version}"
+    ss.vendored_framework = 'FBSDKTVOSKit.xcframework'
   end
 end

@@ -44,7 +44,6 @@ NS_SWIFT_NAME(AppEventsUtility)
 + (instancetype)new NS_UNAVAILABLE;
 
 @property (class, nonatomic, copy, readonly) NSString *advertiserID;
-@property (class, nonatomic, assign, readonly) FBSDKAdvertisingTrackingStatus advertisingTrackingStatus;
 @property (class, nonatomic, assign, readonly) long unixTimeNow;
 @property (class, nonatomic, assign, readonly) BOOL isDebugBuild;
 
@@ -57,8 +56,10 @@ NS_SWIFT_NAME(AppEventsUtility)
 + (void)logAndNotify:(NSString *)msg;
 + (NSString *)tokenStringToUseFor:(FBSDKAccessToken *)token;
 + (BOOL)validateIdentifier:(NSString *)identifier;
-+ (id)getVariable:(NSString *)variableName fromInstance:(NSObject *)instance;
 + (NSNumber *)getNumberValue:(NSString *)text;
++ (BOOL)shouldDropAppEvent;
 + (BOOL)isSensitiveUserData:(NSString *)text;
++ (BOOL)isStandardEvent:(NSString *)event;
++ (long)convertToUnixTime:(NSDate *)date;
 
 @end

@@ -16,17 +16,16 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#import <OCMock/OCMock.h>
 #import <XCTest/XCTest.h>
 
-#import <OCMock/OCMock.h>
-
-#import "FBSDKLibAnalyzer.h"
+#import "FBSDKCoreKit+Internal.h"
 
 @interface FBSDKLibAnalyzer ()
 
-+ (NSArray<NSString *> *)getClassNames:(NSArray<NSString *> *)prefixes
-                            frameworks:(NSArray<NSString *> *)frameworks;
-+ (NSString *)getAddress:(NSString *)callstackEntry;
++ (NSArray<NSString *> *)_getClassNames:(NSArray<NSString *> *)prefixes
+                             frameworks:(NSArray<NSString *> *)frameworks;
++ (NSString *)_getAddress:(NSString *)callstackEntry;
 
 @end
 
@@ -48,7 +47,7 @@
                                       @"FBSDKShareKit",
                                       @"FBSDKTVOSKit"];
   id analyzerMock = [OCMockObject niceMockForClass:[FBSDKLibAnalyzer class]];
-  [[analyzerMock expect] getClassNames:[OCMArg any] frameworks:[OCMArg any]];
+  [[analyzerMock expect] _getClassNames:[OCMArg any] frameworks:[OCMArg any]];
 
   NSDictionary *result = [FBSDKLibAnalyzer getMethodsTable:prefixes frameworks:frameworks];
   XCTAssertNotNil(result);
@@ -59,13 +58,12 @@
 - (void)testGetAddress
 {
   NSString *callstackEntry = @"0 CoreFoundation 0x0000000104cbd02e __exceptionPreprocess + 350";
-  NSString *result1 = [FBSDKLibAnalyzer getAddress:callstackEntry];
+  NSString *result1 = [FBSDKLibAnalyzer _getAddress:callstackEntry];
   XCTAssertTrue([result1 isEqualToString:@"0x0000000104cbd02e"]);
 
   callstackEntry = @"0 CoreFoundation 0000000104cbd02e __exceptionPreprocess + 350";
-  NSString *result2 = [FBSDKLibAnalyzer getAddress:callstackEntry];
+  NSString *result2 = [FBSDKLibAnalyzer _getAddress:callstackEntry];
   XCTAssertNil(result2);
-
 }
 
 @end

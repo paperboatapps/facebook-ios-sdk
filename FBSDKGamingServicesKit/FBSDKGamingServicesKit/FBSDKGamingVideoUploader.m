@@ -18,11 +18,11 @@
 
 #import "FBSDKGamingVideoUploader.h"
 
-#import "FBSDKCoreKit+Internal.h"
+#import "FBSDKCoreKitInternalImport.h"
 #import "FBSDKGamingVideoUploaderConfiguration.h"
 #import "FBSDKVideoUploader.h"
 
-@interface FBSDKGamingVideoUploader() <FBSDKVideoUploaderDelegate>
+@interface FBSDKGamingVideoUploader () <FBSDKVideoUploaderDelegate>
 {
   NSFileHandle *_fileHandle;
   FBSDKGamingServiceResultCompletionHandler _completionHandler;
@@ -39,21 +39,21 @@
   return [super init];
 }
 
-+ (void)uploadVideoWithConfiguration:(FBSDKGamingVideoUploaderConfiguration * _Nonnull)configuration
++ (void)uploadVideoWithConfiguration:(FBSDKGamingVideoUploaderConfiguration *_Nonnull)configuration
                 andCompletionHandler:(FBSDKGamingServiceCompletionHandler _Nonnull)completionHandler
 {
   return
   [self
    uploadVideoWithConfiguration:configuration
-   completionHandler:^(BOOL success, id _Nullable result, NSError * _Nullable error) {
-    if (completionHandler) {
-      completionHandler(success, error);
-    }
-  }
+   completionHandler:^(BOOL success, id _Nullable result, NSError *_Nullable error) {
+     if (completionHandler) {
+       completionHandler(success, error);
+     }
+   }
    andProgressHandler:nil];
 }
 
-+ (void)uploadVideoWithConfiguration:(FBSDKGamingVideoUploaderConfiguration * _Nonnull)configuration
++ (void)uploadVideoWithConfiguration:(FBSDKGamingVideoUploaderConfiguration *_Nonnull)configuration
           andResultCompletionHandler:(FBSDKGamingServiceResultCompletionHandler _Nonnull)completionHandler
 {
   return
@@ -63,26 +63,30 @@
    andProgressHandler:nil];
 }
 
-+ (void)uploadVideoWithConfiguration:(FBSDKGamingVideoUploaderConfiguration * _Nonnull)configuration
++ (void)uploadVideoWithConfiguration:(FBSDKGamingVideoUploaderConfiguration *_Nonnull)configuration
                    completionHandler:(FBSDKGamingServiceResultCompletionHandler _Nonnull)completionHandler
                   andProgressHandler:(FBSDKGamingServiceProgressHandler _Nullable)progressHandler
 {
   if ([FBSDKAccessToken currentAccessToken] == nil) {
-    completionHandler(false,
-                      nil,
-                      [FBSDKError
-                       errorWithCode:FBSDKErrorAccessTokenRequired
-                       message:@"A valid access token is required to upload Images"]);
+    completionHandler(
+      false,
+      nil,
+      [FBSDKError
+       errorWithCode:FBSDKErrorAccessTokenRequired
+       message:@"A valid access token is required to upload Images"]
+    );
 
     return;
   }
 
   if (configuration.videoURL == nil) {
-    completionHandler(false,
-                      nil,
-                      [FBSDKError
-                       errorWithCode:FBSDKErrorInvalidArgument
-                       message:@"Attempting to upload a nil videoURL"]);
+    completionHandler(
+      false,
+      nil,
+      [FBSDKError
+       errorWithCode:FBSDKErrorInvalidArgument
+       message:@"Attempting to upload a nil videoURL"]
+    );
 
     return;
   }
@@ -93,15 +97,16 @@
    error:nil];
 
   if ((unsigned long)[fileHandle seekToEndOfFile] == 0) {
-    completionHandler(false,
-                      nil,
-                      [FBSDKError
-                       errorWithCode:FBSDKErrorInvalidArgument
-                       message:@"Attempting to upload an empty video file"]);
+    completionHandler(
+      false,
+      nil,
+      [FBSDKError
+       errorWithCode:FBSDKErrorInvalidArgument
+       message:@"Attempting to upload an empty video file"]
+    );
 
     return;
   }
-
 
   const NSUInteger fileSize = (unsigned long)[fileHandle seekToEndOfFile];
 
@@ -141,11 +146,10 @@
 - (void)safeCompleteWithSuccess:(BOOL)success
                           error:(NSError *)error
                          result:(id)result
-
 {
   NSError *finalError = error;
 
-  if (success == false && error == nil)  {
+  if (success == false && error == nil) {
     finalError =
     [FBSDKError
      errorWithCode:FBSDKErrorUnknown
@@ -189,15 +193,15 @@
   return videoChunkData;
 }
 
-- (void)videoUploader:(FBSDKVideoUploader *)videoUploader
-didCompleteWithResults:(NSDictionary<NSString *, id> *)results
+- (void)   videoUploader:(FBSDKVideoUploader *)videoUploader
+  didCompleteWithResults:(NSDictionary<NSString *, id> *)results
 {
   [self safeProgressWithTotalBytesSent:_totalBytesExpectedToSend];
 
   [self
    safeCompleteWithSuccess:[results[@"success"] boolValue]
    error:nil
-   result:@{@"video_id": results[@"video_id"] ?: @""}];
+   result:@{@"video_id" : results[@"video_id"] ?: @""}];
 }
 
 - (void)videoUploader:(FBSDKVideoUploader *)videoUploader

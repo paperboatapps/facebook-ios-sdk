@@ -16,18 +16,27 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+// @lint-ignore-every CLANGTIDY
+#import <AdSupport/AdSupport.h>
 #import <OCMock/OCMock.h>
 #import <UIKit/UIKit.h>
 #import <XCTest/XCTest.h>
 
-#import <FBSDKCoreKit/FBSDKAppEvents.h>
-#import <FBSDKCoreKit/FBSDKSettings.h>
+#import "FBSDKCoreKit+Internal.h"
+#import "FBSDKTestCase.h"
 
-#import "FBSDKAppEventsUtility.h"
-#import "FBSDKTypeUtility.h"
-#import "FBSDKUtility.h"
+static NSString *const FBSDKSettingsInstallTimestamp = @"com.facebook.sdk:FBSDKSettingsInstallTimestamp";
+static NSString *const FBSDKSettingsAdvertisingTrackingStatus = @"com.facebook.sdk:FBSDKSettingsAdvertisingTrackingStatus";
 
-@interface FBSDKAppEventsUtilityTests : XCTestCase
+@interface FBSDKSettings ()
++ (void)resetAdvertiserTrackingStatusCache;
+@end
+
+@interface FBSDKAppEventsConfiguration ()
+- (void)setDefaultATEStatus:(FBSDKAdvertisingTrackingStatus)status;
+@end
+
+@interface FBSDKAppEventsUtilityTests : FBSDKTestCase
 
 @end
 
@@ -39,11 +48,18 @@
 
 - (void)setUp
 {
+  self.shouldAppEventsMockBePartial = YES;
+
   [super setUp];
+
+  [self stubServerConfigurationFetchingWithConfiguration:[FBSDKServerConfiguration defaultServerConfigurationForAppID:nil] error:nil];
+
   _mockAppEventsUtility = OCMClassMock([FBSDKAppEventsUtility class]);
-  OCMStub([_mockAppEventsUtility advertiserID]).andReturn([NSUUID UUID].UUIDString);
   [FBSDKAppEvents setUserID:@"test-user-id"];
   _mockNSLocale = OCMClassMock([NSLocale class]);
+
+  // This should be removed when these tests are updated to check the actual requests that are created
+  [self stubAllocatingGraphRequestConnection];
 }
 
 - (void)tearDown
@@ -75,6 +91,11 @@
 
 - (void)testParamsDictionary
 {
+  OCMStub([_mockAppEventsUtility advertiserID]).andReturn([NSUUID UUID].UUIDString);
+  id mockFBSDKSettings = OCMClassMock([FBSDKSettings class]);
+  OCMStub([mockFBSDKSettings isAdvertiserTrackingEnabled]).andReturn(YES);
+
+  OCMStub([_mockAppEventsUtility advertiserID]).andReturn([NSUUID UUID].UUIDString);
   NSDictionary *dict = [FBSDKAppEventsUtility activityParametersDictionaryForEvent:@"event"
                                                          shouldAccessAdvertisingID:YES];
   XCTAssertEqualObjects(@"event", dict[@"event"]);
@@ -162,7 +183,7 @@
   XCTAssertTrue([str isEqualToString:@"1234.56"]);
 }
 
-#if BUCK
+#ifdef BUCK
 - (void)testGetNumberValueWithLocaleFR
 {
   OCMStub(ClassMethod([_mockNSLocale currentLocale])).andReturn([NSLocale localeWithLocaleIdentifier:@"fr"]);
@@ -186,26 +207,121 @@
   XCTAssertEqualObjects(str, @"1234.56");
 }
 
-- (void)testIsSensitiveUserData
+- (void)testGetAdvertiserIDOniOS14WithCollectionEnabled
 {
-  NSString *text = @"test@sample.com";
-  XCTAssertTrue([FBSDKAppEventsUtility isSensitiveUserData:text]);
+  id mockFBSDKSettings = OCMClassMock([FBSDKSettings class]);
+  OCMStub([mockFBSDKSettings isAdvertiserIDCollectionEnabled]).andReturn(YES);
 
-  text = @"4716 5255 0221 9085";
-  XCTAssertTrue([FBSDKAppEventsUtility isSensitiveUserData:text]);
+  id mockAppEventsConfiguration = OCMClassMock([FBSDKAppEventsConfiguration class]);
+  OCMStub([mockAppEventsConfiguration advertiserIDCollectionEnabled]).andReturn(YES);
+  id mockAppEventsConfigurationManager = OCMClassMock([FBSDKAppEventsConfigurationManager class]);
+  OCMStub([mockAppEventsConfigurationManager cachedAppEventsConfiguration]).andReturn(mockAppEventsConfiguration);
+  id mockASIdentifierManager = OCMClassMock([ASIdentifierManager class]);
+  OCMStub([mockASIdentifierManager advertisingIdentifier]).andReturn([NSUUID UUID]);
+  OCMStub([mockASIdentifierManager sharedManager]).andReturn(mockASIdentifierManager);
 
-  text = @"4716525502219085";
-  XCTAssertTrue([FBSDKAppEventsUtility isSensitiveUserData:text]);
+  if (@available(iOS 14.0, *)) {
+    XCTAssertNotNil(
+      [FBSDKAppEventsUtility advertiserID],
+      "Advertiser id should not be nil when collection is enabled"
+    );
+  }
+}
 
-  text = @"4716525502219086";
-  XCTAssertFalse([FBSDKAppEventsUtility isSensitiveUserData:text]);
+- (void)testGetAdvertiserIDOniOS14WithCollectionDisabled
+{
+  id mockFBSDKSettings = OCMClassMock([FBSDKSettings class]);
+  OCMStub([mockFBSDKSettings isAdvertiserIDCollectionEnabled]).andReturn(YES);
 
-  text = @"";
-  XCTAssertFalse([FBSDKAppEventsUtility isSensitiveUserData:text]);
+  id mockAppEventsConfiguration = OCMClassMock([FBSDKAppEventsConfiguration class]);
+  OCMStub([mockAppEventsConfiguration advertiserIDCollectionEnabled]).andReturn(NO);
+  id mockAppEventsConfigurationManager = OCMClassMock([FBSDKAppEventsConfigurationManager class]);
+  OCMStub([mockAppEventsConfigurationManager cachedAppEventsConfiguration]).andReturn(mockAppEventsConfiguration);
+  OCMStub([mockAppEventsConfigurationManager cachedAppEventsConfiguration]).andReturn(mockAppEventsConfiguration);
+  id mockASIdentifierManager = OCMClassMock([ASIdentifierManager class]);
+  OCMStub([mockASIdentifierManager advertisingIdentifier]).andReturn([NSUUID UUID]);
+  OCMStub([mockASIdentifierManager sharedManager]).andReturn(mockASIdentifierManager);
 
-  // number of digits less than 9 will not be considered as credit card number
-  text = @"4716525";
-  XCTAssertFalse([FBSDKAppEventsUtility isSensitiveUserData:text]);
+  if (@available(iOS 14.0, *)) {
+    XCTAssertNil([FBSDKAppEventsUtility advertiserID]);
+  }
+}
+
+- (void)testShouldDropAppEvent
+{
+  id mockFBSDKSettings = OCMClassMock([FBSDKSettings class]);
+  OCMStub([mockFBSDKSettings getAdvertisingTrackingStatus]).andReturn(FBSDKAdvertisingTrackingDisallowed);
+
+  id mockAppEventsConfiguration = OCMClassMock([FBSDKAppEventsConfiguration class]);
+  OCMStub([mockAppEventsConfiguration eventCollectionEnabled]).andReturn(NO);
+  id mockAppEventsConfigurationManager = OCMClassMock([FBSDKAppEventsConfigurationManager class]);
+  OCMStub([mockAppEventsConfigurationManager cachedAppEventsConfiguration]).andReturn(mockAppEventsConfiguration);
+
+  if (@available(iOS 14.0, *)) {
+    XCTAssertTrue([FBSDKAppEventsUtility shouldDropAppEvent]);
+  } else {
+    XCTAssertFalse([FBSDKAppEventsUtility shouldDropAppEvent]);
+  }
+}
+
+- (void)testAdvertiserTrackingEnabledInAppEventPayload
+{
+  FBSDKAppEventsConfiguration *configuration = [[FBSDKAppEventsConfiguration alloc] initWithJSON:@{}];
+  id mockAppEventsConfigurationManager = OCMClassMock([FBSDKAppEventsConfigurationManager class]);
+  OCMStub([mockAppEventsConfigurationManager cachedAppEventsConfiguration]).andReturn(configuration);
+  NSArray<NSNumber *> *statusList = @[@(FBSDKAdvertisingTrackingAllowed), @(FBSDKAdvertisingTrackingDisallowed), @(FBSDKAdvertisingTrackingUnspecified)];
+  for (NSNumber *defaultATEStatus in statusList) {
+    [configuration setDefaultATEStatus:defaultATEStatus.unsignedIntegerValue];
+    for (NSNumber *status in statusList) {
+      [FBSDKSettings resetAdvertiserTrackingStatusCache];
+      [[NSUserDefaults standardUserDefaults] removeObjectForKey:FBSDKSettingsAdvertisingTrackingStatus];
+      if ([status unsignedIntegerValue] != FBSDKAdvertisingTrackingUnspecified) {
+        [FBSDKSettings setAdvertiserTrackingStatus:[status unsignedIntegerValue]];
+      }
+      NSDictionary *dict = [FBSDKAppEventsUtility activityParametersDictionaryForEvent:@"event"
+                                                             shouldAccessAdvertisingID:YES];
+      if (@available(iOS 14.0, *)) {
+        // If status is unspecified, ATE will be defaultATEStatus
+        if ([status unsignedIntegerValue] == FBSDKAdvertisingTrackingUnspecified) {
+          if ([defaultATEStatus unsignedIntegerValue] == FBSDKAdvertisingTrackingUnspecified) {
+            XCTAssertNil(dict[@"advertiser_tracking_enabled"], @"advertiser_tracking_enabled should not be attached to event payload if ATE is unspecified");
+          } else {
+            BOOL advertiserTrackingEnabled = defaultATEStatus.unsignedIntegerValue == FBSDKAdvertisingTrackingAllowed;
+            XCTAssertTrue([@(advertiserTrackingEnabled).stringValue isEqualToString:[FBSDKTypeUtility dictionary:dict objectForKey:@"advertiser_tracking_enabled" ofType:NSString.class]], @"advertiser_tracking_enabled should be default value when ATE is not set");
+          }
+        } else {
+          BOOL advertiserTrackingEnabled = status.unsignedIntegerValue == FBSDKAdvertisingTrackingAllowed;
+          XCTAssertTrue([@(advertiserTrackingEnabled).stringValue isEqualToString:[FBSDKTypeUtility dictionary:dict objectForKey:@"advertiser_tracking_enabled" ofType:NSString.class]], @"advertiser_tracking_enabled should be equal to ATE explicitly setted via setAdvertiserTrackingStatus");
+        }
+      } else {
+        XCTAssertNotNil(dict[@"advertiser_tracking_enabled"]);
+      }
+    }
+  }
+}
+
+- (void)testDropAppEvent
+{
+  id mockAppEventsState = OCMClassMock([FBSDKAppEventsState class]);
+  OCMStub([mockAppEventsState alloc]).andReturn(mockAppEventsState);
+  OCMStub([mockAppEventsState initWithToken:OCMArg.any appID:OCMArg.any]).andReturn(mockAppEventsState);
+  [FBSDKSettings setAppID:@"123"];
+
+  OCMStub([_mockAppEventsUtility shouldDropAppEvent]).andReturn(YES);
+  [FBSDKAppEvents logEvent:@"event"];
+  OCMReject([mockAppEventsState addEvent:OCMArg.any isImplicit:NO]);
+}
+
+- (void)testSendAppEvent
+{
+  id mockAppEventsState = OCMClassMock([FBSDKAppEventsState class]);
+  OCMStub([mockAppEventsState alloc]).andReturn(mockAppEventsState);
+  OCMStub([mockAppEventsState initWithToken:OCMArg.any appID:OCMArg.any]).andReturn(mockAppEventsState);
+  [FBSDKSettings setAppID:@"123"];
+
+  OCMStub([_mockAppEventsUtility shouldDropAppEvent]).andReturn(NO);
+  [FBSDKAppEvents logEvent:@"event"];
+  OCMVerify([mockAppEventsState addEvent:OCMArg.any isImplicit:NO]);
 }
 
 - (void)testFlushReasonToString
@@ -227,6 +343,38 @@
 
   NSString *result6 = [FBSDKAppEventsUtility flushReasonToString:FBSDKAppEventsFlushReasonEagerlyFlushingEvent];
   XCTAssertEqualObjects(@"EagerlyFlushingEvent", result6);
+}
+
+- (void)testGetStandardEvents
+{
+  NSArray<NSString *> *standardEvents = @[
+    @"fb_mobile_complete_registration",
+    @"fb_mobile_content_view",
+    @"fb_mobile_search",
+    @"fb_mobile_rate",
+    @"fb_mobile_tutorial_completion",
+    @"fb_mobile_add_to_cart",
+    @"fb_mobile_add_to_wishlist",
+    @"fb_mobile_initiated_checkout",
+    @"fb_mobile_add_payment_info",
+    @"fb_mobile_purchase",
+    @"fb_mobile_level_achieved",
+    @"fb_mobile_achievement_unlocked",
+    @"fb_mobile_spent_credits",
+    @"Contact",
+    @"CustomizeProduct",
+    @"Donate",
+    @"FindLocation",
+    @"Schedule",
+    @"StartTrial",
+    @"SubmitApplication",
+    @"Subscribe",
+    @"AdImpression",
+    @"AdClick",
+  ];
+  for (NSString *event in standardEvents) {
+    XCTAssertTrue([FBSDKAppEventsUtility isStandardEvent:event]);
+  }
 }
 
 @end
